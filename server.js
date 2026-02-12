@@ -2,6 +2,8 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const path = require("path");
+
 const connectDB = require("./config/db");
 
 dotenv.config();
@@ -16,6 +18,9 @@ connectDB();
 
 // Routes
 app.use("/api/users", require("./routes/userRoutes"));              
+app.use("/api/cours", require("./routes/courRoutes"));              
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Lancer le serveur
 const PORT = process.env.PORT || 5000;

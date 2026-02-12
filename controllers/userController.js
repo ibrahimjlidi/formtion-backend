@@ -1,5 +1,77 @@
 // controllers/userController.js
 const User = require("../models/User");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+
+
+
+exports.register = async (req, res) => {
+  try {
+    const { nom, prenom, email, mdp } = req.body;
+
+    const userExiste = await User.findOne({ email });
+    if (userExiste) {
+      return res.status(400).json({ message: "Email déjà utilisé" });
+    }
+
+    const user = await User.create({
+      nom,
+      prenom,
+      email,
+      mdp,
+      image: req.file ? req.file.filename : null
+    });
+
+    res.status(201).json({
+      _id: user._id,
+      nom: user.nom,
+      email: user.email,
+      image: user.image,
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+
+exports.login = async (req, res) => {
+  const { email, mdp } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "Identifiants invalides" });
+    }
+
+    const isMatch = await bcrypt.compare(mdp, user.mdp);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Identifiants invalides" });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, role: user.role ,nom: user.nom ,email: user.email},
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        nom: user.nom,
+        email: user.email,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 
 // Ajouter un utilisateur (admin uniquement)
 exports.ajouterUtilisateur = async (req, res) => {
